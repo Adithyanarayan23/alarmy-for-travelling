@@ -1,0 +1,17 @@
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+sqlalchemy[asyncio]>=2.0.0
+asyncpg
+alembic
+pydantic-settings>=2.0.0
+pydantic[email]
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt<4.1.0
+httpx
+celery[redis]>=5.3.0
+redis
+openai>=1.0.0
+python-multipart
+pytest
+pytest-asyncio

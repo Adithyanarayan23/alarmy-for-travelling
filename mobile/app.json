@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Alarmy",
+    "slug": "alarmy-for-travelling",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "alarmy",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1a2e"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.alarmy.travel",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Alarmy needs your location to calculate your arrival time.",
+        "NSLocationAlwaysUsageDescription": "Alarmy needs your location in the background to keep your ETA accurate while you sleep."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1a1a2e"
+      },
+      "package": "com.alarmy.travel",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "WAKE_LOCK"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-notifications",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Alarmy to use your location to track your journey."
+        }
+      ]
+    ]
+  }
+}

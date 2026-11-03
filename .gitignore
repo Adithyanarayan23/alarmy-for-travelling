@@ -1,0 +1,33 @@
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.db
+*.sqlite3
+.env
+.env.*
+!.env.example
+
+# Node / Expo / Mobile
+node_modules/
+.expo/
+dist/
+web-build/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
