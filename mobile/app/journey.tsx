@@ -63,7 +63,30 @@ export default function JourneyScreen() {
     return () => clearInterval(timer);
   }, [estimatedArrivalIso]);
 
+  const performEndJourney = async () => {
+    await cancelAlarm(activeAlarmId);
+    if (activeJourney) {
+      try {
+        await updateJourney(activeJourney.id, { status: 'cancelled' });
+      } catch {
+        // Local cleanup proceeds even if backend is offline
+      }
+    }
+    clearJourney();
+    router.replace('/');
+  };
+
   const handleEndJourney = () => {
+    if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
+      const confirmed = window.confirm(
+        'End Journey? This will cancel your scheduled wake-up alarm and stop tracking your ETA.'
+      );
+      if (confirmed) {
+        performEndJourney();
+      }
+      return;
+    }
+
     Alert.alert(
       'End Journey?',
       'This will cancel your scheduled wake-up alarm and stop tracking your ETA.',
@@ -72,18 +95,7 @@ export default function JourneyScreen() {
         {
           text: 'End Journey',
           style: 'destructive',
-          onPress: async () => {
-            await cancelAlarm(activeAlarmId);
-            if (activeJourney) {
-              try {
-                await updateJourney(activeJourney.id, { status: 'cancelled' });
-              } catch {
-                // Local cleanup proceeds even if backend is offline
-              }
-            }
-            clearJourney();
-            router.replace('/');
-          },
+          onPress: performEndJourney,
         },
       ]
     );

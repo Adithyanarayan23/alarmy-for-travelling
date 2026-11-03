@@ -1,16 +1,18 @@
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
-import { initializeNotifications } from '../services/alarmService';
+import { initializeNotifications, registerWebAlarmFiredHandler } from '../services/alarmService';
 
-// Configure foreground notification presentation so alarms always show with sound and alert
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+}
 
 /**
  * Sets up `expo-notifications` listeners for both foreground receipt and user interaction.
@@ -21,6 +23,13 @@ export function useNotificationHandler(): void {
 
   useEffect(() => {
     initializeNotifications().catch(() => {});
+
+    if (Platform.OS === 'web') {
+      registerWebAlarmFiredHandler(() => {
+        router.push('/alarm');
+      });
+      return;
+    }
 
     // When notification fires while app is in foreground, automatically show the alarm screen
     const receivedSubscription = Notifications.addNotificationReceivedListener(

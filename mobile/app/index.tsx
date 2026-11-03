@@ -45,6 +45,7 @@ export default function HomeScreen() {
   const [bufferMinutes, setBufferMinutes] = useState<number>(30);
   const [isStarting, setIsStarting] = useState<boolean>(false);
   const [isAiProcessing, setIsAiProcessing] = useState<boolean>(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [loadingMessage, setLoadingMessage] = useState<string>(
     'Starting journey & scheduling alarm...'
   );
@@ -64,6 +65,7 @@ export default function HomeScreen() {
     alarmBuffer: number
   ) => {
     setIsStarting(true);
+    setStatusError(null);
     setLoadingMessage(`Calculating ETA to ${destination.name}...`);
 
     try {
@@ -122,7 +124,8 @@ export default function HomeScreen() {
         err instanceof Error
           ? err.message
           : 'Failed to start journey. Please check your connection and permissions.';
-      Alert.alert('Could Not Start Journey', message);
+      setStatusError(message);
+      if (Platform.OS !== 'web') Alert.alert('Could Not Start Journey', message);
     } finally {
       setIsStarting(false);
     }
@@ -130,7 +133,9 @@ export default function HomeScreen() {
 
   const handleStartButtonPress = async () => {
     if (!selectedDestination) {
-      Alert.alert('Select Destination', 'Please search and select where you are going first.');
+      const msg = 'Please search and select where you are going first.';
+      setStatusError(msg);
+      if (Platform.OS !== 'web') Alert.alert('Select Destination', msg);
       return;
     }
     await startJourneyWithDestination(selectedDestination, bufferMinutes);
@@ -143,6 +148,7 @@ export default function HomeScreen() {
    */
   const handleAiPrompt = async (text: string) => {
     setIsAiProcessing(true);
+    setStatusError(null);
     try {
       const parsed = await parseJourneyText(text);
       const targetBuffer = parsed.bufferMinutes || 30;
@@ -166,7 +172,8 @@ export default function HomeScreen() {
         err instanceof Error
           ? err.message
           : 'Could not parse your travel request. Try searching manually above.';
-      Alert.alert('AI Assistant', msg);
+      setStatusError(msg);
+      if (Platform.OS !== 'web') Alert.alert('AI Assistant', msg);
     } finally {
       setIsAiProcessing(false);
     }
@@ -237,6 +244,13 @@ export default function HomeScreen() {
           )}
 
           {/* Current GPS Location Display */}
+          {statusError ? (
+            <View style={styles.errorBanner}>
+              <Ionicons name="alert-circle" size={18} color={colors.danger} />
+              <Text style={styles.errorBannerText}>{statusError}</Text>
+            </View>
+          ) : null}
+
           <LocationDisplay
             cityName={cityName}
             isLoading={isLocating}
@@ -394,6 +408,22 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.85)',
     fontSize: fontSizes.xs,
     marginTop: 2,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(252, 129, 129, 0.14)',
+    borderWidth: 1,
+    borderColor: colors.danger,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm + 2,
+    marginBottom: spacing.md,
+    gap: spacing.xs,
+  },
+  errorBannerText: {
+    color: colors.danger,
+    fontSize: fontSizes.sm,
+    flex: 1,
   },
   bufferSection: {
     marginBottom: spacing.lg,

@@ -9,11 +9,25 @@ export const ALARM_CHANNEL_ID = 'travel-alarm-channel';
 
 // Module-level variable holding the active alarm notification identifier
 let currentAlarmIdentifier: string | null = null;
+let webAlarmTimerId: ReturnType<typeof setTimeout> | null = null;
+let onWebAlarmFiredCallback: (() => void) | null = null;
+
+export function registerWebAlarmFiredHandler(cb: () => void): void {
+  onWebAlarmFiredCallback = cb;
+}
 
 /**
  * Configures notification categories and Android high-priority alarm channel.
  */
 export async function initializeNotifications(): Promise<void> {
+  if (Platform.OS === 'web') {
+    const storedId = await AsyncStorage.getItem(ACTIVE_ALARM_STORAGE_KEY);
+    if (storedId) {
+      currentAlarmIdentifier = storedId;
+    }
+    return;
+  }
+
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(ALARM_CHANNEL_ID, {
       name: 'Travel Wake-Up Alarms',
@@ -48,6 +62,19 @@ export async function initializeNotifications(): Promise<void> {
  * Requests notification permissions from the operating system.
  */
 export async function requestPermissions(): Promise<boolean> {
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (window.Notification.permission === 'default') {
+        try {
+          await window.Notification.requestPermission();
+        } catch {
+          // ignore
+        }
+      }
+    }
+    return true;
+  }
+
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
 
@@ -82,13 +109,20 @@ export async function getActiveAlarmIdentifier(): Promise<string | null> {
  * Cancels a scheduled alarm notification by identifier and clears persisted state.
  */
 export async function cancelAlarm(identifier?: string | null): Promise<void> {
-  const targetId = identifier ?? currentAlarmIdentifier ?? (await AsyncStorage.getItem(ACTIVE_ALARM_STORAGE_KEY));
+  if (webAlarmTimerId) {
+    clearTimeout(webAlarmTimerId);
+    webAlarmTimerId = null;
+  }
 
-  if (targetId) {
-    try {
-      await Notifications.cancelScheduledNotificationAsync(targetId);
-    } catch {
-      // Ignore if notification already fired or was dismissed by OS
+  if (Platform.OS !== 'web') {
+    const targetId = identifier ?? currentAlarmIdentifier ?? (await AsyncStorage.getItem(ACTIVE_ALARM_STORAGE_KEY));
+
+    if (targetId) {
+      try {
+        await Notifications.cancelScheduledNotificationAsync(targetId);
+      } catch {
+        // Ignore if notification already fired or was dismissed by OS
+      }
     }
   }
 
@@ -122,6 +156,29 @@ export async function scheduleAlarm(
   const nowMs = Date.now();
   const triggerDate =
     alarmTime.getTime() <= nowMs + 2000 ? new Date(nowMs + 2000) : alarmTime;
+
+  if (Platform.OS === 'web') {
+    const webId = `web-alarm-${Date.now()}`;
+    const delayMs = Math.max(2000, triggerDate.getTime() - nowMs);
+    webAlarmTimerId = setTimeout(() => {
+      try {
+        if (typeof window !== 'undefined' && 'Notification' in window && window.Notification.permission === 'granted') {
+          new window.Notification("🔔 You're arriving soon!", {
+            body: `Wake up! You're approaching ${destination}. Expected arrival: ${formattedEta}`,
+          });
+        }
+      } catch {
+        // ignore browser notification errors
+      }
+      if (onWebAlarmFiredCallback) {
+        onWebAlarmFiredCallback();
+      }
+    }, delayMs);
+
+    currentAlarmIdentifier = webId;
+    await AsyncStorage.setItem(ACTIVE_ALARM_STORAGE_KEY, webId);
+    return webId;
+  }
 
   const identifier = await Notifications.scheduleNotificationAsync({
     content: {
