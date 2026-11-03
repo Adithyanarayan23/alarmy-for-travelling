@@ -113,6 +113,21 @@ export async function searchDestinations(query: string): Promise<Destination[]> 
 
     return rawList.map(normalizeDestination);
   } catch {
+    try {
+      // Try public OpenStreetMap Nominatim directly when backend is unreachable
+      const nomRes = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=8&q=${encodeURIComponent(trimmed)}`
+      );
+      if (nomRes.ok) {
+        const nomData = (await nomRes.json()) as RawDestinationItem[];
+        if (Array.isArray(nomData) && nomData.length > 0) {
+          return nomData.map(normalizeDestination);
+        }
+      }
+    } catch {
+      // ignore and fall back to static list
+    }
+
     // Filter fallback destinations matching query so search still works smoothly
     const lower = trimmed.toLowerCase();
     return FALLBACK_DESTINATIONS.filter(

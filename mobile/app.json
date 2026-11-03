@@ -11,6 +11,10 @@
       "resizeMode": "contain",
       "backgroundColor": "#1a1a2e"
     },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.alarmy.travel",
